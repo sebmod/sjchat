@@ -29,25 +29,25 @@ class MessageService extends MessageServiceGrpc.MessageServiceImplBase {
   private static Chat.Builder buildMockChat() {
     Random random = new Random();
     Chat.Builder chatBuilder = Chat.newBuilder();
-    chatBuilder.setId("mock-id");
+    chatBuilder.setId(id);
     chatBuilder.setTitle("Test chat " + chatBuilder.getId());
     return chatBuilder;
   }
 
-  private static User.Builder buildMockUser() {
+  private static User.Builder buildMockUser(String id) {
     Random random = new Random();
     User.Builder userBuilder = User.newBuilder();
-    userBuilder.setId("mock-id");
+    userBuilder.setId(id);
     userBuilder.setUsername("user_" + userBuilder.getId());
     return userBuilder;
   }
 
-  private static Message.Builder buildMockMessage() {
+  private static Message.Builder buildMockMessage(String id) {
     Random random = new Random();
     Message.Builder messageBuilder = Message.newBuilder();
-    messageBuilder.setId("mock-id");
+    messageBuilder.setId(id);
     messageBuilder.setMessage("Test message " + messageBuilder.getId());
-    messageBuilder.setSender("id");
+    messageBuilder.setSender("user-" + id);
     return messageBuilder;
   }
 
