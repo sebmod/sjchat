@@ -1,18 +1,31 @@
 package sjchat.messages;
 
+import java.util.List;
 import java.util.Random;
 
+import io.grpc.Channel;
+import io.grpc.ManagedChannelBuilder;
 import io.grpc.stub.StreamObserver;
 import sjchat.daos.ChatDao;
 import sjchat.daos.ChatDaoImpl;
 import sjchat.daos.MessageDao;
 import sjchat.daos.MessageDaoImpl;
+import sjchat.entities.ChatEntity;
+import sjchat.users.GetUserRequest;
 import sjchat.users.User;
+import sjchat.users.UserServiceGrpc;
 
 class MessageService extends MessageServiceGrpc.MessageServiceImplBase {
   MessageDao messageDao = new MessageDaoImpl();
   ChatDao chatDao = new ChatDaoImpl();
+  private Channel userServiceChannel = buildUserServiceChannel();
 
+  private static Channel buildUserServiceChannel() {
+    String host = System.getenv("USER_SERVICE_HOST");
+    host = (host == null) ? "localhost" : host;
+
+    return ManagedChannelBuilder.forAddress(host, 50051).usePlaintext(true).build(); //TODO: Put port in config file
+  }
   private static Chat.Builder buildMockChat() {
     Random random = new Random();
     Chat.Builder chatBuilder = Chat.newBuilder();
@@ -38,22 +51,23 @@ class MessageService extends MessageServiceGrpc.MessageServiceImplBase {
     return messageBuilder;
   }
 
+  public Chat buildChat(ChatEntity entity){
+    Chat.Builder builder = Chat.newBuilder().setId(entity.getId()).setTitle(entity.getTitle());
+    final UserServiceGrpc.UserServiceBlockingStub blockingStub = UserServiceGrpc.newBlockingStub(userServiceChannel);
+    for(String userId : entity.getParticipants()){
+      builder.addParticipants(blockingStub.getUser(GetUserRequest.newBuilder().setId(userId).build()).getUser());
+    }
+    return builder.build();
+  }
+
   @Override
   public void getChatList(GetChatListRequest req, StreamObserver<GetChatListResponse> responseObserver) {
     GetChatListResponse.Builder chatListResponseBuilder = GetChatListResponse.newBuilder();
 
-    User.Builder userBuilder1 = buildMockUser();
-    User.Builder userBuilder2 = buildMockUser();
-
-    Chat.Builder chatBuilder1 = buildMockChat();
-    chatBuilder1.addParticipants(userBuilder1);
-    chatBuilder1.addParticipants(userBuilder2);
-    chatListResponseBuilder.addChats(chatBuilder1);
-
-    Chat.Builder chatBuilder2 = buildMockChat();
-    chatBuilder2.addParticipants(userBuilder1);
-    chatBuilder2.addParticipants(userBuilder2);
-    chatListResponseBuilder.addChats(chatBuilder2);
+    List<ChatEntity> chatEntityList = chatDao.findAll();
+    for(ChatEntity entity : chatEntityList){
+      chatListResponseBuilder.addChats(buildChat(entity));
+    }
 
     GetChatListResponse chatResponse = chatListResponseBuilder.build();
 
