@@ -12,6 +12,7 @@ import sjchat.users.User;
 class MessageService extends MessageServiceGrpc.MessageServiceImplBase {
   MessageDao messageDao = new MessageDaoImpl();
   ChatDao chatDao = new ChatDaoImpl();
+
   private static Chat.Builder buildMockChat() {
     Random random = new Random();
     Chat.Builder chatBuilder = Chat.newBuilder();
